@@ -2,15 +2,15 @@
 # Compaction Advisor - One-Line Installer
 #
 # Install with:
-#   curl -fsSL https://raw.githubusercontent.com/USER/compaction-advisor/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/vignesh07/compaction-advisor/main/install.sh | bash
 #
 # Or clone and run:
-#   git clone https://github.com/USER/compaction-advisor.git
+#   git clone https://github.com/vignesh07/compaction-advisor.git
 #   cd compaction-advisor && ./install.sh
 
 set -euo pipefail
 
-REPO_URL="https://raw.githubusercontent.com/USER/compaction-advisor/main"
+REPO_URL="https://raw.githubusercontent.com/vignesh07/compaction-advisor/main"
 CLAUDE_DIR="$HOME/.claude"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 
@@ -99,18 +99,22 @@ EOF
     echo "✓ Settings created with hook"
 fi
 
+# Configure status line
+echo "⚙️  Configuring status line..."
+
+STATUS_SCRIPT="$CLAUDE_DIR/status/context_status.sh"
+
+# Add or update statusLine in settings.json
+jq --arg cmd "$STATUS_SCRIPT" '.statusLine = {"type": "command", "command": $cmd}' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp"
+mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+echo "✓ Status line configured"
+
 echo ""
 echo "╔═══════════════════════════════════════╗"
 echo "║          Installation Complete        ║"
 echo "╚═══════════════════════════════════════╝"
 echo ""
-echo "Next steps:"
-echo ""
-echo "  1. Open Claude Code"
-echo "  2. Run: /config"
-echo "  3. Set status line to:"
-echo "     ~/.claude/status/context_status.sh"
-echo "  4. Restart Claude Code"
+echo ">>> Restart Claude Code to activate <<<"
 echo ""
 echo "What you'll see:"
 echo ""

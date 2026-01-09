@@ -14,41 +14,18 @@
 ```bash
 /plugin marketplace add vignesh07/compaction-advisor
 /plugin install compaction-advisor
+/compaction-advisor:setup
 ```
 
-Then **configure the status line** (required, one-time setup):
+Then restart Claude Code. That's it!
 
-Add this to your `~/.claude/settings.json`:
-
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/plugins/cache/compaction-advisor/compaction-advisor/1.0.0/scripts/context_status.sh"
-  }
-}
-```
-
-> **Note:** The plugin system doesn't auto-configure status lines (they're user preferences). This manual step is required.
-
-### Option 2: One-Line Install
+### Option 2: One-Line Install (without plugin system)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/vignesh07/compaction-advisor/main/install.sh | bash
 ```
 
-Then:
-1. Run `/config` in Claude Code
-2. Set status line to `~/.claude/status/context_status.sh`
-3. Restart Claude Code
-
-### Option 3: Git Clone
-
-```bash
-git clone https://github.com/vignesh07/compaction-advisor.git
-cd compaction-advisor
-./install.sh
-```
+Then restart Claude Code.
 
 ---
 
@@ -261,15 +238,18 @@ compaction-advisor/
 ├── .claude-plugin/
 │   ├── plugin.json           # Plugin manifest
 │   └── marketplace.json      # Marketplace listing
+├── commands/
+│   ├── setup.md              # /compaction-advisor:setup command
+│   └── test.md               # Diagnostic command
 ├── hooks/
 │   └── hooks.json            # UserPromptSubmit hook
 ├── scripts/
 │   ├── context_status.sh     # Status line script
 │   ├── inject_context.sh     # Hook injection script
-│   └── install.sh            # Legacy installer
+│   └── setup.sh              # Auto-setup for status line
 ├── references/
 │   └── THRESHOLDS.md         # Detailed threshold math
-├── install.sh                # Root curl-able installer
+├── install.sh                # One-line curl installer
 ├── SKILL.md                  # Claude instructions
 ├── LICENSE                   # MIT
 └── README.md
