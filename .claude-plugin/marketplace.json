@@ -8,7 +8,7 @@
       "name": "compaction-advisor",
       "source": "./",
       "description": "Automatic context monitoring that prevents mid-task compaction. Shows real-time free space in status line and injects context state so Claude knows when to recommend /compact.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "license": "MIT"
     }
   ]
