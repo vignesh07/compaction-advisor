@@ -67,6 +67,51 @@ Two lightweight components work together:
 
 ---
 
+## 🧠 Why It Works: Natural Language Understanding
+
+This plugin doesn't use pattern matching or hardcoded rules. It simply **gives Claude information** and lets it reason naturally.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ You type: "can you do a full refactor of this codebase?"    │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Hook injects context state:                                 │
+│ <context-status>CRITICAL: Only 13k tokens free.</context>   │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Claude sees BOTH pieces of information:                     │
+│ • Context is critically low (13k free)                      │
+│ • User wants a refactor (~50k tokens needed)                │
+│                                                             │
+│ Claude naturally reasons: 13k < 50k → warn user             │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Claude responds:                                            │
+│ "Context is at 13k free. A refactor needs ~50k.             │
+│  Run /compact first to avoid mid-task interruption."        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**No prediction needed.** The plugin provides facts, Claude reasons about them.
+
+| Request | Claude's Reasoning |
+|---------|-------------------|
+| "refactor the app" | Big task (~50k) vs 13k free → warn |
+| "add a small feature" | Medium task (~30k) vs 13k free → warn |
+| "fix this typo" | Tiny task (~5k) vs 13k free → proceed |
+| "rewrite everything" | Huge task (~80k) vs 13k free → definitely warn |
+
+This is the power of LLMs — natural understanding, not brittle pattern matching.
+
+---
+
 ## 🚦 Status Indicators
 
 | Status Line | Free Space | What It Means | Claude Sees |
