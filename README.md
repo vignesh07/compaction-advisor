@@ -1,28 +1,84 @@
-# Compaction Advisor
+# 🧠 Compaction Advisor
 
-Automatic context monitoring for Claude Code that prevents mid-task compaction interruptions.
+> Automatic context monitoring for Claude Code — never get interrupted by mid-task compaction again.
 
-## The Problem
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blueviolet)](https://claude.ai/code)
 
-Claude Code auto-compacts when context fills up - often mid-task, losing important context and breaking your flow.
+---
 
-## The Solution
+## 🎯 The Problem
 
-**Claude automatically knows when context is low.** No user intervention needed.
+Claude Code auto-compacts when your context window fills up. This often happens **mid-task** — right when you're deep in a refactor or debugging session. You lose important context, and Claude has to rediscover things it already knew.
+
+**The worst part?** By the time you see the warning, it's too late.
+
+## ✨ The Solution
+
+**Compaction Advisor** gives Claude real-time awareness of context usage. No user intervention needed.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ Status line: [Opus] 🟠 25k free ████████░░              │
-│                                                          │
-│ You: I want to refactor the auth system                 │
-│                                                          │
-│ Claude: (automatically sees context warning)            │
-│         Context is at 25k free - that's tight for a    │
-│         refactor. Run /compact first?                   │
-└─────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│                                                            │
+│  Status Line:  [Opus] 🟠 25k free ████████░░               │
+│                                                            │
+│  You: I want to refactor the authentication system         │
+│                                                            │
+│  Claude: Context is at 25k free — that's tight for a       │
+│          refactor (~50k needed). Run /compact first to     │
+│          avoid interruption?                               │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
 ```
 
-## Installation
+Claude **automatically knows** when context is low and proactively advises you.
+
+---
+
+## 📊 How It Works
+
+Two lightweight components work together:
+
+```
+┌─────────────────┐         ┌─────────────────────────┐
+│   Status Line   │         │  UserPromptSubmit Hook  │
+│   (for you)     │         │     (for Claude)        │
+└────────┬────────┘         └────────────┬────────────┘
+         │                               │
+         ▼                               ▼
+   Displays in UI              Runs on every prompt
+         │                               │
+         ▼                               ▼
+┌─────────────────┐         ┌─────────────────────────┐
+│ 🟠 25k free     │────────▶│ Reads state file        │
+│ ████████░░      │  writes │ Injects into Claude     │
+└─────────────────┘         └─────────────────────────┘
+                                         │
+                                         ▼
+                            ┌─────────────────────────┐
+                            │ Claude sees:            │
+                            │ <context-status>        │
+                            │ WARNING: 25k free...    │
+                            │ </context-status>       │
+                            └─────────────────────────┘
+```
+
+**When context is healthy → hook stays silent (0 tokens)**
+
+---
+
+## 🚦 Status Indicators
+
+| Status Line | Free Space | What It Means | Claude Sees |
+|-------------|------------|---------------|-------------|
+| 🟢 `85k free` | 50k+ | Safe for any task | Nothing (silent) |
+| 🟡 `42k free` | 30-50k | Medium tasks OK | `CAUTION` message |
+| 🟠 `25k free` | 15-30k | Small tasks only | `WARNING` message |
+| 🔴 `COMPACT` | <15k | Compact NOW | `CRITICAL` message |
+
+---
+
+## 📦 Installation
 
 ### Option 1: Plugin Marketplace (Recommended)
 
@@ -31,9 +87,10 @@ Claude Code auto-compacts when context fills up - often mid-task, losing importa
 /plugin install compaction-advisor
 ```
 
-Then configure the status line:
+Then configure status line:
 1. Run `/config`
-2. Set status line to the plugin's script (shown after install)
+2. Navigate to "Status line"
+3. Set command to the plugin's status script
 
 ### Option 2: One-Line Install
 
@@ -46,7 +103,7 @@ Then:
 2. Set status line to `~/.claude/status/context_status.sh`
 3. Restart Claude Code
 
-### Option 3: Manual Install
+### Option 3: Git Clone
 
 ```bash
 git clone https://github.com/vignesh07/compaction-advisor.git
@@ -54,100 +111,162 @@ cd compaction-advisor
 ./install.sh
 ```
 
-## How It Works
+---
 
-Two components work together:
+## 💰 Token Cost
 
-1. **Status line script** - Shows real-time context in UI, writes state to file
-2. **UserPromptSubmit hook** - Injects context state into Claude's context on each prompt
+Designed to be **extremely lightweight**:
+
+| Context State | Tokens Added |
+|---------------|--------------|
+| 🟢 Healthy (50k+ free) | **0** |
+| 🟡 Caution | ~20 |
+| 🟠 Warning | ~25 |
+| 🔴 Critical | ~18 |
+
+**Most of the time: zero tokens.** The hook only injects when context is actually concerning.
+
+---
+
+## 📏 Task Size Reference
+
+Use this to gauge if you have enough headroom:
+
+| Task Type | Estimated Tokens |
+|-----------|------------------|
+| Typo fix, add comment | ~5k |
+| Bug fix, simple test | ~15k |
+| New feature, API endpoint | ~30k |
+| Refactor, complex debug | ~50k |
+| Architecture overhaul | ~80k+ |
+
+**Rule of thumb:** If `free space < task estimate`, run `/compact` first.
+
+---
+
+## 🔒 Security
+
+This plugin:
+
+- ✅ **Runs locally** — no external API calls
+- ✅ **No data collection** — nothing leaves your machine
+- ✅ **Minimal permissions** — only reads Claude Code's context data
+- ✅ **Open source** — full code visibility
+- ✅ **No network access** — pure shell scripts
+
+### What the scripts do:
+
+| Script | Purpose |
+|--------|---------|
+| `context_status.sh` | Reads JSON from Claude Code stdin, calculates free space, writes to local file |
+| `inject_context.sh` | Reads local state file, outputs warning text if concerning |
+
+Both scripts are simple bash — inspect them yourself in `/scripts/`.
+
+---
+
+## 🔧 Technical Details
+
+### Context Window Math
 
 ```
-Status Line                    UserPromptSubmit Hook
-     │                                  │
-     ▼                                  ▼
-Writes state to file ──────► Reads file, injects into Claude
-     │                                  │
-     ▼                                  ▼
-User sees: 🟠 25k free        Claude sees: <context-status>WARNING...</context-status>
+Total context:        200,000 tokens
+Autocompact buffer:   ~45,000 tokens (22.5%)
+─────────────────────────────────────
+Usable space:         ~155,000 tokens
+
+Free space = Usable - Current usage
 ```
 
-When context is healthy, the hook stays silent (no noise, no tokens).
+The status line shows **free space before compaction triggers**, not total context remaining.
 
-## Token Cost
+### How Claude Code Provides Data
 
-Designed to be lightweight:
+The status line receives JSON via stdin:
 
-| Context State | Status Line | Hook Injection | Total Tokens |
-|---------------|-------------|----------------|--------------|
-| 🟢 Safe (50k+) | 0 (display only) | Silent | **0** |
-| 🟡 Caution (30-50k) | 0 | ~20 tokens | **~20** |
-| 🟠 Warning (15-30k) | 0 | ~25 tokens | **~25** |
-| 🔴 Critical (<15k) | 0 | ~18 tokens | **~18** |
+```json
+{
+  "context_window": {
+    "context_window_size": 200000,
+    "current_usage": {
+      "input_tokens": 93000,
+      "cache_creation_input_tokens": 5000,
+      "cache_read_input_tokens": 8000
+    }
+  }
+}
+```
 
-**Most of the time: 0 tokens.** The hook only injects when context is actually concerning.
+---
 
-## Indicators
-
-| Status Line | Free Space | Claude Sees |
-|-------------|------------|-------------|
-| 🟢 50k+ free | Safe | Nothing (silent) |
-| 🟡 30-50k free | OK | `<context-status>CAUTION...</context-status>` |
-| 🟠 15-30k free | Low | `<context-status>WARNING...</context-status>` |
-| 🔴 COMPACT | Critical | `<context-status>CRITICAL...</context-status>` |
-
-## Task Token Estimates
-
-| Task | ~Tokens |
-|------|---------|
-| Typo fix | 5k |
-| Bug fix | 15k |
-| New feature | 30k |
-| Refactor | 50k |
-| Architecture | 80k+ |
-
-## Technical Details
-
-- Context window: 200k tokens
-- Autocompact buffer: ~45k (22.5%)
-- Usable before compaction: ~155k tokens
-
-The status line receives JSON from Claude Code with `context_window` data. The hook uses `UserPromptSubmit` to inject context that Claude sees before processing each prompt.
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 compaction-advisor/
 ├── .claude-plugin/
-│   └── plugin.json           # Plugin configuration
+│   ├── plugin.json           # Plugin manifest
+│   └── marketplace.json      # Marketplace listing
 ├── hooks/
 │   └── hooks.json            # UserPromptSubmit hook
 ├── scripts/
-│   ├── context_status.sh     # Status line + state writer
-│   ├── inject_context.sh     # Hook script
-│   └── install.sh            # Manual installer
+│   ├── context_status.sh     # Status line script
+│   ├── inject_context.sh     # Hook injection script
+│   └── install.sh            # Legacy installer
 ├── references/
-│   └── THRESHOLDS.md         # Detailed math
-├── install.sh                # Root installer (curl-able)
+│   └── THRESHOLDS.md         # Detailed threshold math
+├── install.sh                # Root curl-able installer
 ├── SKILL.md                  # Claude instructions
-├── README.md
-└── LICENSE
+├── LICENSE                   # MIT
+└── README.md
 ```
 
-## Uninstall
+---
+
+## 🗑️ Uninstall
 
 ```bash
 rm ~/.claude/status/context_status.sh
 rm ~/.claude/inject_context.sh
 rm ~/.claude/context_state.json
-# Remove hook from ~/.claude/settings.json manually
 ```
 
-## Contributing
+Then remove the hook from `~/.claude/settings.json` (or reinstall the plugin without hooks).
 
-- Better token cost calibration
-- Support for different model context sizes
-- Alternative display formats
+---
 
-## License
+## 🤝 Contributing
 
-MIT
+Contributions welcome! Ideas:
+
+- [ ] Better token cost calibration from real usage data
+- [ ] Support for different model context sizes (Sonnet 1M beta)
+- [ ] Visual themes for status line
+- [ ] Automatic `/compact` suggestions with focus hints
+
+---
+
+## 📄 License
+
+MIT — use it however you want.
+
+---
+
+## 💡 Why This Exists
+
+Mid-task compaction is frustrating:
+- You lose nuanced understanding of your codebase
+- Claude has to re-read files it already knew
+- Flow state is broken
+- Important debugging context vanishes
+
+**Proactive compaction** puts you in control:
+- You decide when to compact
+- You specify what context to preserve
+- No surprise interruptions
+- Better output quality
+
+---
+
+<p align="center">
+  <i>Built with Claude Code 🤖</i>
+</p>
