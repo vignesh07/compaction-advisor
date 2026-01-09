@@ -6,71 +6,51 @@ Run diagnostic checks on the compaction-advisor plugin installation.
 
 Run these checks and report the results:
 
-### 1. State File Check
+### 1. Find Plugin Installation
 ```bash
-if [ -f ~/.claude/context_state.json ]; then
-  echo "✓ State file exists"
-  AGE=$(($(date +%s) - $(stat -f %m ~/.claude/context_state.json 2>/dev/null || stat -c %Y ~/.claude/context_state.json)))
-  echo "  Age: ${AGE}s"
-  if [ $AGE -lt 60 ]; then
-    echo "  ✓ Fresh (status line is running)"
-  else
-    echo "  ⚠ Stale (status line may not be configured)"
-  fi
-  echo "  Contents:"
-  cat ~/.claude/context_state.json | jq -r '"  free_k: \(.free_k)k, status: \(.status)"'
+PLUGIN_DIR=$(ls -d ~/.claude/plugins/cache/compaction-advisor/compaction-advisor/*/ 2>/dev/null | head -1)
+if [ -n "$PLUGIN_DIR" ]; then
+  echo "Plugin installed at: $PLUGIN_DIR"
 else
-  echo "✗ State file missing - status line not running"
+  echo "Plugin NOT installed via marketplace"
 fi
 ```
 
-### 2. Hook Script Check
+### 2. Session State Files Check
 ```bash
-SCRIPT="$HOME/.claude/plugins/cache/compaction-advisor/compaction-advisor/1.0.0/scripts/inject_context.sh"
-if [ -f "$SCRIPT" ]; then
-  echo "✓ Hook script exists"
-  if [ -x "$SCRIPT" ]; then
-    echo "  ✓ Executable"
-  else
-    echo "  ✗ Not executable - run: chmod +x \"$SCRIPT\""
-  fi
+echo "Session state files:"
+ls -la ~/.claude/context_state_*.json 2>/dev/null || echo "  No session state files found"
+echo ""
+echo "Most recent state file:"
+LATEST=$(ls -t ~/.claude/context_state_*.json 2>/dev/null | head -1)
+if [ -n "$LATEST" ]; then
+  cat "$LATEST" | jq .
 else
-  echo "✗ Hook script missing at expected path"
+  echo "  None - status line hasn't written state yet"
 fi
 ```
 
-### 3. Status Line Script Check
+### 3. Status Line Configuration
 ```bash
-SCRIPT="$HOME/.claude/plugins/cache/compaction-advisor/compaction-advisor/1.0.0/scripts/context_status.sh"
-if [ -f "$SCRIPT" ]; then
-  echo "✓ Status line script exists"
-  if [ -x "$SCRIPT" ]; then
-    echo "  ✓ Executable"
-  else
-    echo "  ✗ Not executable"
-  fi
-else
-  echo "✗ Status line script missing"
-fi
+echo "Status line config in settings.json:"
+jq '.statusLine' ~/.claude/settings.json 2>/dev/null || echo "  Not configured"
 ```
 
-### 4. Settings Check
+### 4. Hook Configuration
 ```bash
-if grep -q "context_status.sh" ~/.claude/settings.json 2>/dev/null; then
-  echo "✓ Status line configured in settings.json"
-else
-  echo "✗ Status line NOT configured in settings.json"
-  echo "  Add to ~/.claude/settings.json:"
-  echo '  "statusLine": {"type": "command", "command": "~/.claude/plugins/cache/compaction-advisor/compaction-advisor/1.0.0/scripts/context_status.sh"}'
-fi
+echo "UserPromptSubmit hooks in settings.json:"
+jq '.hooks.UserPromptSubmit' ~/.claude/settings.json 2>/dev/null || echo "  None configured"
 ```
 
-### 5. Hook Injection Test
+### 5. Script Permissions
 ```bash
-echo "Current hook output:"
-~/.claude/plugins/cache/compaction-advisor/compaction-advisor/1.0.0/scripts/inject_context.sh 2>&1 || echo "(no output - context is healthy or state file issue)"
+PLUGIN_DIR=$(ls -d ~/.claude/plugins/cache/compaction-advisor/compaction-advisor/*/ 2>/dev/null | head -1)
+if [ -n "$PLUGIN_DIR" ]; then
+  echo "Scripts in $PLUGIN_DIR/scripts/:"
+  ls -la "$PLUGIN_DIR/scripts/"
+fi
 ```
 
 ## Summary
 
-Report each check as ✓ (pass) or ✗ (fail) with recommendations for any failures.
+Report each check with findings and any recommendations.

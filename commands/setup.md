@@ -1,14 +1,16 @@
 # Compaction Advisor Setup
 
-Run the setup script to automatically configure the status line:
+Configure the status line automatically. Run this setup script:
 
 ```bash
-~/.claude/plugins/cache/compaction-advisor/compaction-advisor/*/scripts/setup.sh
+PLUGIN_DIR=$(ls -d ~/.claude/plugins/cache/compaction-advisor/compaction-advisor/*/ 2>/dev/null | head -1)
+if [ -n "$PLUGIN_DIR" ]; then
+  bash "$PLUGIN_DIR/scripts/setup.sh"
+else
+  echo "ERROR: Plugin not installed. Run these first:"
+  echo "  /plugin marketplace add vignesh07/compaction-advisor"
+  echo "  /plugin install compaction-advisor"
+fi
 ```
 
-This script will:
-1. Find the plugin installation path
-2. Update ~/.claude/settings.json with the statusLine configuration
-3. Tell the user to restart Claude Code
-
-After running, remind the user to restart Claude Code for changes to take effect.
+After running successfully, tell the user to restart Claude Code for the status line to appear.
