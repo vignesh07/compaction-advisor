@@ -68,6 +68,14 @@ else
     DISPLAY="🟢 ${FREE_K}k free"
 fi
 
+# Read existing tool count (for checkpoint tracking)
+TOOL_COUNT=0
+LAST_CHECKPOINT=0
+if [ -f "$STATE_FILE" ]; then
+    TOOL_COUNT=$(jq -r '.tool_count // 0' "$STATE_FILE" 2>/dev/null || echo 0)
+    LAST_CHECKPOINT=$(jq -r '.last_checkpoint // 0' "$STATE_FILE" 2>/dev/null || echo 0)
+fi
+
 # Write state to session-specific file for hook to read
 mkdir -p "$HOME/.claude"
 cat > "$STATE_FILE" << EOF
@@ -79,6 +87,8 @@ cat > "$STATE_FILE" << EOF
   "usable_tokens": $USABLE_TOKENS,
   "used_percent": $USED_PERCENT,
   "status": "$STATUS",
+  "tool_count": $TOOL_COUNT,
+  "last_checkpoint": $LAST_CHECKPOINT,
   "timestamp": $(date +%s)
 }
 EOF

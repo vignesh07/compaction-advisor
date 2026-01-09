@@ -39,7 +39,7 @@ Claude Code auto-compacts when your context window fills up. This often happens 
 
 ## ✨ The Solution
 
-**Compaction Advisor** gives Claude real-time awareness of context usage. No user intervention needed.
+**Compaction Advisor** gives Claude real-time awareness of context usage with **intelligent checkpointing**. No user intervention needed.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -88,6 +88,45 @@ Two lightweight components work together:
 ```
 
 **When context is healthy → hook stays silent (0 tokens)**
+
+---
+
+## 🔄 Intelligent Checkpointing
+
+During long autonomous tasks (refactors, multi-file changes), the plugin monitors progress and suggests checkpoints:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Claude is working on a large refactor...                    │
+│                                                             │
+│ [Edit] file1.ts ✓                                          │
+│ [Edit] file2.ts ✓                                          │
+│ [Bash] npm test ✓                                          │
+│ [Edit] file3.ts ✓                                          │
+│ ... 8 more operations ...                                   │
+│                                                             │
+│ <context-checkpoint>                                        │
+│ CHECKPOINT RECOMMENDED: Context at 22k after 12 operations. │
+│ Good time to /compact. Summarize progress to preserve.      │
+│ </context-checkpoint>                                       │
+│                                                             │
+│ Claude: "Good checkpoint! I've completed:                   │
+│ • Refactored auth module (files 1-5)                       │
+│ • Fixed 3 failing tests                                     │
+│ • Remaining: API endpoints (files 6-10)                    │
+│                                                             │
+│ Run /compact Focus on auth refactor progress               │
+│ Then I'll continue with the API changes."                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Three Levels of Protection
+
+| Hook | When | What Happens |
+|------|------|--------------|
+| `UserPromptSubmit` | Before each task | Warns if task won't fit |
+| `PostToolUse` | After 8+ operations | Suggests checkpoint if low |
+| `PreCompact` | Just before auto-compact | Emergency context save |
 
 ---
 
@@ -192,10 +231,12 @@ This plugin:
 
 | Script | Purpose |
 |--------|---------|
-| `context_status.sh` | Reads JSON from Claude Code stdin, calculates free space, writes to local file |
-| `inject_context.sh` | Reads local state file, outputs warning text if concerning |
+| `context_status.sh` | Status line - calculates free space, writes state file |
+| `inject_context.sh` | UserPromptSubmit - warns before new tasks |
+| `checkpoint_advisor.sh` | PostToolUse - suggests checkpoints mid-task |
+| `precompact_advisor.sh` | PreCompact - emergency save before auto-compact |
 
-Both scripts are simple bash — inspect them yourself in `/scripts/`.
+All scripts are simple bash — inspect them yourself in `/scripts/`.
 
 ---
 
@@ -244,10 +285,12 @@ compaction-advisor/
 │   ├── setup.md              # /compaction-advisor:setup command
 │   └── test.md               # Diagnostic command
 ├── hooks/
-│   └── hooks.json            # UserPromptSubmit hook
+│   └── hooks.json            # All hook configurations
 ├── scripts/
 │   ├── context_status.sh     # Status line script
-│   ├── inject_context.sh     # Hook injection script
+│   ├── inject_context.sh     # UserPromptSubmit hook
+│   ├── checkpoint_advisor.sh # PostToolUse hook (mid-task)
+│   ├── precompact_advisor.sh # PreCompact hook (emergency)
 │   └── setup.sh              # Auto-configures settings.json
 ├── references/
 │   └── THRESHOLDS.md         # Detailed threshold math
