@@ -7,6 +7,51 @@
 
 ---
 
+## 📦 Installation
+
+### Option 1: Plugin Marketplace (Recommended)
+
+```bash
+/plugin marketplace add vignesh07/compaction-advisor
+/plugin install compaction-advisor
+```
+
+Then **configure the status line** (required, one-time setup):
+
+Add this to your `~/.claude/settings.json`:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/plugins/cache/compaction-advisor/compaction-advisor/1.0.0/scripts/context_status.sh"
+  }
+}
+```
+
+> **Note:** The plugin system doesn't auto-configure status lines (they're user preferences). This manual step is required.
+
+### Option 2: One-Line Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/vignesh07/compaction-advisor/main/install.sh | bash
+```
+
+Then:
+1. Run `/config` in Claude Code
+2. Set status line to `~/.claude/status/context_status.sh`
+3. Restart Claude Code
+
+### Option 3: Git Clone
+
+```bash
+git clone https://github.com/vignesh07/compaction-advisor.git
+cd compaction-advisor
+./install.sh
+```
+
+---
+
 ## 🎯 The Problem
 
 Claude Code auto-compacts when your context window fills up. This often happens **mid-task** — right when you're deep in a refactor or debugging session. You lose important context, and Claude has to rediscover things it already knew.
@@ -53,8 +98,8 @@ Two lightweight components work together:
 │ 🟠 25k free     │────────▶│ Reads state file        │
 │ ████████░░      │  writes │ Injects into Claude     │
 └─────────────────┘         └─────────────────────────┘
-                                         │
-                                         ▼
+                                        │
+                                        ▼
                             ┌─────────────────────────┐
                             │ Claude sees:            │
                             │ <context-status>        │
@@ -120,51 +165,6 @@ This is the power of LLMs — natural understanding, not brittle pattern matchin
 | 🟡 `42k free` | 30-50k | Medium tasks OK | `CAUTION` message |
 | 🟠 `25k free` | 15-30k | Small tasks only | `WARNING` message |
 | 🔴 `COMPACT` | <15k | Compact NOW | `CRITICAL` message |
-
----
-
-## 📦 Installation
-
-### Option 1: Plugin Marketplace (Recommended)
-
-```bash
-/plugin marketplace add vignesh07/compaction-advisor
-/plugin install compaction-advisor
-```
-
-Then **configure the status line** (required, one-time setup):
-
-Add this to your `~/.claude/settings.json`:
-
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/plugins/cache/compaction-advisor/compaction-advisor/1.0.0/scripts/context_status.sh"
-  }
-}
-```
-
-> **Note:** The plugin system doesn't auto-configure status lines (they're user preferences). This manual step is required.
-
-### Option 2: One-Line Install
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/vignesh07/compaction-advisor/main/install.sh | bash
-```
-
-Then:
-1. Run `/config` in Claude Code
-2. Set status line to `~/.claude/status/context_status.sh`
-3. Restart Claude Code
-
-### Option 3: Git Clone
-
-```bash
-git clone https://github.com/vignesh07/compaction-advisor.git
-cd compaction-advisor
-./install.sh
-```
 
 ---
 
@@ -286,17 +286,6 @@ rm ~/.claude/context_state.json
 ```
 
 Then remove the hook from `~/.claude/settings.json` (or reinstall the plugin without hooks).
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Ideas:
-
-- [ ] Better token cost calibration from real usage data
-- [ ] Support for different model context sizes (Sonnet 1M beta)
-- [ ] Visual themes for status line
-- [ ] Automatic `/compact` suggestions with focus hints
 
 ---
 
