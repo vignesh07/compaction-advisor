@@ -13,11 +13,13 @@ If no files found, the status line hasn't written state yet.
 ## 3. Status Line Config
 Run: `jq '.statusLine' ~/.claude/settings.json`
 
-## 4. Hook Config
-Run: `jq '.hooks.UserPromptSubmit' ~/.claude/settings.json`
+## 4. Plugin Hook Config
+Run: `cat ~/.claude/plugins/cache/compaction-advisor/compaction-advisor/*/hooks/hooks.json | head -20`
+
+Note: For plugin installs, hooks load from the plugin's hooks.json (not user's settings.json).
 
 ## 5. Latest State File Content
 Run: `cat ~/.claude/context_state_*.json | head -20`
 
 ## Summary
-Report what's working and what needs fixing.
+Report what's working. Note: If status is "safe", the hook correctly outputs nothing (0 tokens).
