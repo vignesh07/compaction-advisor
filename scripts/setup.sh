@@ -1,46 +1,34 @@
 #!/bin/bash
 # Compaction Advisor - Auto Setup Script
 #
-# Automatically configures the status line in ~/.claude/settings.json
-# Run this once after plugin installation.
+# Creates wrapper scripts at fixed locations that call plugin scripts.
+# This way plugin updates don't break paths AND scripts auto-update.
 
 set -euo pipefail
 
 SETTINGS_FILE="$HOME/.claude/settings.json"
+STATUS_DIR="$HOME/.claude/status"
+WRAPPER_SCRIPT="$STATUS_DIR/context_status.sh"
 
-# Find the plugin installation path
-PLUGIN_ROOT=""
+echo "Setting up Compaction Advisor..."
 
-# Check common plugin cache locations
-for path in "$HOME/.claude/plugins/cache/compaction-advisor/compaction-advisor"/*; do
-    if [ -d "$path/scripts" ] && [ -f "$path/scripts/context_status.sh" ]; then
-        PLUGIN_ROOT="$path"
-        break
-    fi
+# Create wrapper script that finds and calls the latest plugin version
+mkdir -p "$STATUS_DIR"
+cat > "$WRAPPER_SCRIPT" << 'WRAPPER'
+#!/bin/bash
+# Wrapper that calls the latest compaction-advisor plugin version
+PLUGIN_SCRIPT=""
+for path in "$HOME/.claude/plugins/cache/compaction-advisor/compaction-advisor"/*/scripts/context_status.sh; do
+    [ -f "$path" ] && PLUGIN_SCRIPT="$path"
 done
-
-# Fallback: check if running from repo clone
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -z "$PLUGIN_ROOT" ] && [ -f "$SCRIPT_DIR/context_status.sh" ]; then
-    PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
+if [ -n "$PLUGIN_SCRIPT" ] && [ -x "$PLUGIN_SCRIPT" ]; then
+    exec "$PLUGIN_SCRIPT"
+else
+    echo "[?] compaction-advisor not found"
 fi
-
-if [ -z "$PLUGIN_ROOT" ]; then
-    echo "ERROR: Could not find compaction-advisor installation."
-    echo "Please install the plugin first:"
-    echo "  /plugin marketplace add vignesh07/compaction-advisor"
-    echo "  /plugin install compaction-advisor"
-    exit 1
-fi
-
-STATUS_SCRIPT="$PLUGIN_ROOT/scripts/context_status.sh"
-
-if [ ! -f "$STATUS_SCRIPT" ]; then
-    echo "ERROR: Status script not found at: $STATUS_SCRIPT"
-    exit 1
-fi
-
-echo "Found compaction-advisor at: $PLUGIN_ROOT"
+WRAPPER
+chmod +x "$WRAPPER_SCRIPT"
+echo "Created wrapper: $WRAPPER_SCRIPT"
 
 # Create settings.json if it doesn't exist
 if [ ! -f "$SETTINGS_FILE" ]; then
@@ -48,31 +36,24 @@ if [ ! -f "$SETTINGS_FILE" ]; then
     echo '{}' > "$SETTINGS_FILE"
 fi
 
-# Read current settings and add statusLine
-if command -v jq &> /dev/null; then
-    # Use jq for proper JSON manipulation
-    TEMP_FILE=$(mktemp)
-    jq --arg cmd "$STATUS_SCRIPT" '.statusLine = {"type": "command", "command": $cmd}' "$SETTINGS_FILE" > "$TEMP_FILE"
-    mv "$TEMP_FILE" "$SETTINGS_FILE"
-    echo "SUCCESS: Status line configured!"
-    echo ""
-    echo "Added to $SETTINGS_FILE:"
-    echo "  statusLine.command = $STATUS_SCRIPT"
-    echo ""
-    echo ">>> Restart Claude Code for the status line to appear <<<"
-else
-    echo "ERROR: jq is required but not installed."
-    echo ""
-    echo "Install jq:"
-    echo "  brew install jq      (macOS)"
-    echo "  apt install jq       (Linux)"
-    echo ""
-    echo "Or manually add to $SETTINGS_FILE:"
-    echo '{'
-    echo '  "statusLine": {'
-    echo '    "type": "command",'
-    echo "    \"command\": \"$STATUS_SCRIPT\""
-    echo '  }'
-    echo '}'
-    exit 1
+# Configure statusLine to use wrapper
+jq --arg cmd "$WRAPPER_SCRIPT" '.statusLine = {"type": "command", "command": $cmd}' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp"
+mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+
+# Remove any user-level hooks (plugin's hooks.json handles it with ${CLAUDE_PLUGIN_ROOT})
+if jq -e '.hooks.UserPromptSubmit' "$SETTINGS_FILE" > /dev/null 2>&1; then
+    jq 'del(.hooks.UserPromptSubmit[] | select(.hooks[]?.command | contains("compaction-advisor") or contains("inject_context")))' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp"
+    mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+    jq 'if .hooks.UserPromptSubmit == [] then del(.hooks.UserPromptSubmit) else . end' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp"
+    mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+    jq 'if .hooks == {} then del(.hooks) else . end' "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp"
+    mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+    echo "Cleaned up old hooks from settings.json"
 fi
+
+echo ""
+echo "SUCCESS!"
+echo "  Status line: $WRAPPER_SCRIPT (auto-finds latest plugin version)"
+echo "  Hooks: Plugin's hooks.json (auto-updates with plugin)"
+echo ""
+echo ">>> Restart Claude Code to activate <<<"

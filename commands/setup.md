@@ -1,15 +1,15 @@
 # Compaction Advisor Setup
 
-Configure the status line for compaction-advisor.
+Configure compaction-advisor (one-time setup).
 
 ## Steps
 
-1. First, find the plugin path:
-   Run: `ls -d ~/.claude/plugins/cache/compaction-advisor/compaction-advisor/*/`
+1. Find and run the setup script:
 
-2. Then run the setup script using the latest version path from step 1:
-   Run: `~/.claude/plugins/cache/compaction-advisor/compaction-advisor/1.1.0/scripts/setup.sh`
+```bash
+for script in ~/.claude/plugins/cache/compaction-advisor/compaction-advisor/*/scripts/setup.sh; do [ -f "$script" ] && bash "$script" && break; done
+```
 
-   (Adjust version number if different from step 1)
+2. Tell user to restart Claude Code.
 
-3. Tell the user to restart Claude Code for the status line to appear.
+The setup creates a wrapper at `~/.claude/status/context_status.sh` that auto-finds the latest plugin version. Future updates won't require re-running setup.
