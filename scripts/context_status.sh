@@ -2,15 +2,17 @@
 # Context Compaction Advisor - Status Line Script
 #
 # 1. Displays real-time context usage in status bar
-# 2. Writes state to ~/.claude/context_state.json for hook to read
+# 2. Writes state to ~/.claude/context_state_<session>.json for hook to read
 #
-# The UserPromptSubmit hook reads this file and injects it into Claude's context,
-# so Claude automatically knows the context state without user intervention.
+# Each session gets its own state file to avoid cross-session contamination.
 
 set -euo pipefail
 
-STATE_FILE="$HOME/.claude/context_state.json"
 input=$(cat)
+
+# Extract session ID for session-specific state file
+SESSION_ID=$(echo "$input" | jq -r '.session_id // "default"' | tr -d '[:space:]' | cut -c1-16)
+STATE_FILE="$HOME/.claude/context_state_${SESSION_ID}.json"
 
 # Parse context window data from Claude Code
 CONTEXT_SIZE=$(echo "$input" | jq -r '.context_window.context_window_size // 200000')
@@ -66,10 +68,11 @@ else
     DISPLAY="🟢 ${FREE_K}k free"
 fi
 
-# Write state to file for hook to read
-mkdir -p "$(dirname "$STATE_FILE")"
+# Write state to session-specific file for hook to read
+mkdir -p "$HOME/.claude"
 cat > "$STATE_FILE" << EOF
 {
+  "session_id": "$SESSION_ID",
   "free_tokens": $FREE_TOKENS,
   "free_k": $FREE_K,
   "total_used": $TOTAL_USED,

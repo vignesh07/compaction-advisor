@@ -1,27 +1,28 @@
 #!/bin/bash
 # Context Injection Hook - UserPromptSubmit
 #
-# Reads context state written by status line script and outputs it
-# so Claude automatically knows the current context situation.
-#
-# Only outputs when context is concerning (caution/warning/critical)
-# to avoid noise on every prompt.
+# Reads session-specific context state and outputs warning if concerning.
+# Only outputs when context is concerning (caution/warning/critical).
 
 set -euo pipefail
 
-STATE_FILE="$HOME/.claude/context_state.json"
+# Read hook input to get session ID
+input=$(cat)
+SESSION_ID=$(echo "$input" | jq -r '.session_id // "default"' | tr -d '[:space:]' | cut -c1-16)
+STATE_FILE="$HOME/.claude/context_state_${SESSION_ID}.json"
 
-# Check if state file exists and is recent (within last 60 seconds)
+# Check if session-specific state file exists
 if [ ! -f "$STATE_FILE" ]; then
+    # No state file for this session yet - status line hasn't run
     exit 0
 fi
 
-# Check file age
+# Check file age (must be recent - within 120 seconds)
 FILE_TIME=$(stat -f %m "$STATE_FILE" 2>/dev/null || stat -c %Y "$STATE_FILE" 2>/dev/null || echo 0)
 CURRENT_TIME=$(date +%s)
 AGE=$((CURRENT_TIME - FILE_TIME))
 
-if [ $AGE -gt 60 ]; then
+if [ $AGE -gt 120 ]; then
     # State file is stale, skip
     exit 0
 fi
