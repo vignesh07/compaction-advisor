@@ -3,7 +3,7 @@
 > Automatic context monitoring for Claude Code — never get interrupted by mid-task compaction again.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blueviolet)](https://claude.ai/code)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blueviolet)](https://docs.anthropic.com/en/docs/claude-code)
 
 ---
 
@@ -18,6 +18,8 @@
 ```
 
 Then restart Claude Code. That's it!
+
+> **Requires:** `jq` (JSON processor). Install with `brew install jq` (macOS) or `apt install jq` (Linux).
 
 ### Option 2: One-Line Install (without plugin system)
 
@@ -246,7 +248,7 @@ compaction-advisor/
 ├── scripts/
 │   ├── context_status.sh     # Status line script
 │   ├── inject_context.sh     # Hook injection script
-│   └── setup.sh              # Auto-setup for status line
+│   └── setup.sh              # Auto-configures settings.json
 ├── references/
 │   └── THRESHOLDS.md         # Detailed threshold math
 ├── install.sh                # One-line curl installer
@@ -259,13 +261,23 @@ compaction-advisor/
 
 ## 🗑️ Uninstall
 
+### Plugin Marketplace Install
+
+```bash
+/plugin uninstall compaction-advisor
+rm ~/.claude/status/context_status.sh
+rm ~/.claude/context_state_*.json
+```
+
+### Curl Install
+
 ```bash
 rm ~/.claude/status/context_status.sh
 rm ~/.claude/inject_context.sh
-rm ~/.claude/context_state.json
+rm ~/.claude/context_state_*.json
 ```
 
-Then remove the hook from `~/.claude/settings.json` (or reinstall the plugin without hooks).
+Then remove the hook from `~/.claude/settings.json`.
 
 ---
 
