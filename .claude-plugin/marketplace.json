@@ -1,0 +1,15 @@
+{
+  "name": "compaction-advisor",
+  "owner": {
+    "name": "vignesh07"
+  },
+  "plugins": [
+    {
+      "name": "compaction-advisor",
+      "source": "./",
+      "description": "Automatic context monitoring that prevents mid-task compaction. Shows real-time free space in status line and injects context state so Claude knows when to recommend /compact.",
+      "version": "1.0.0",
+      "license": "MIT"
+    }
+  ]
+}
