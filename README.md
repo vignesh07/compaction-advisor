@@ -87,10 +87,20 @@ Two lightweight components work together:
 /plugin install compaction-advisor
 ```
 
-Then configure status line:
-1. Run `/config`
-2. Navigate to "Status line"
-3. Set command to the plugin's status script
+Then **configure the status line** (required, one-time setup):
+
+Add this to your `~/.claude/settings.json`:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/plugins/cache/compaction-advisor/compaction-advisor/1.0.0/scripts/context_status.sh"
+  }
+}
+```
+
+> **Note:** The plugin system doesn't auto-configure status lines (they're user preferences). This manual step is required.
 
 ### Option 2: One-Line Install
 
